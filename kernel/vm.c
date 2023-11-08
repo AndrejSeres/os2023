@@ -324,11 +324,17 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
+    flags &= ~(PTE_W);
+    flags != PTE_RSW;
+
+    if(mappages(new, i, PGSIZE, (uint64)pa, flags) != 0){
       goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
+    }
+    add_ref((void*)pa);
+
+    uvmunmap(old, i, PGSIZE, 0);
+    
+    if(mappages(old, i, PGSIZE, (uint64)pa, flags) != 0){
       goto err;
     }
   }
